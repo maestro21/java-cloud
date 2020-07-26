@@ -8,10 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,21 +25,61 @@ public class Controller implements Initializable {
     public static Socket socket;
     private DataInputStream is;
     private DataOutputStream os;
+    public final static String clientPath = "./client/src/main/resources";
 
     public void sendCommand(ActionEvent actionEvent) {
+        String msg = text.getCharacters().toString();
+
+        // download message
+        if(msg.startsWith("./download")) {
+            try {
+                String fileName = msg.split(" ")[1];
+                System.out.println("Downloading file " + fileName);
+                os.writeUTF("./download");
+                os.writeUTF(fileName);
+                os.flush();
+                String response = is.readUTF();
+                System.out.println(response);
+                if(response.equals("OK")) {
+                    long fileLength = is.readLong();
+                    File file = new File(clientPath + "/" + fileName);
+                    if (!file.exists()) {
+                        file.createNewFile();
+                    }
+                    try(FileOutputStream fos = new FileOutputStream(file)) {
+                        byte [] buffer = new byte[1024];
+                        for (long i = 0; i < (fileLength / 1024 == 0 ? 1 : fileLength / 1024); i++) {
+                            int bytesRead = is.read(buffer);
+                            fos.write(buffer, 0, bytesRead);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         System.out.println("SEND!");
     }
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        // TODO: 7/21/2020 init connect to server
-        try{
+
+    private void init() {
+        try {
             socket = new Socket("localhost", 8189);
             is = new DataInputStream(socket.getInputStream());
             os = new DataOutputStream(socket.getOutputStream());
             Thread.sleep(1000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        init();
+        try{
             clientFileList = new ArrayList<>();
-            String clientPath = "./client/src/main/resources/";
             File dir = new File(clientPath);
             if (!dir.exists()) {
                 throw new RuntimeException("directory resource not exists on client");
@@ -76,6 +113,8 @@ public class Controller implements Initializable {
                     }
                 }
             });
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

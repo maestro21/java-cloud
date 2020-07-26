@@ -23,9 +23,9 @@ public class ConnectionHandler implements Runnable {
         byte [] buffer = new byte[1024];
         while (true) {
             try {
-                System.out.println("Test");
                 String command = is.readUTF();
                 System.out.println(command);
+                // Upload files
                 if (command.equals("./upload")) {
                     String fileName = is.readUTF();
                     System.out.println("fileName: " + fileName);
@@ -43,6 +43,27 @@ public class ConnectionHandler implements Runnable {
                     }
                     os.writeUTF("OK");
                 }
+                // Download file
+                if (command.equals("./download")) {
+                    String fileName = is.readUTF();
+                    System.out.println("fileName: " + fileName);
+                    File file = new File(Server.serverPath + "/" + fileName);
+                    if (!file.exists()) {
+                        os.writeUTF("File " + fileName + "don't exist");
+                    } else {
+                        os.writeUTF("OK");
+                        os.writeLong(file.length());
+                        FileInputStream fis = new FileInputStream(file);
+                        buffer = new byte[1024];
+                        while (fis.available() > 0) {
+                            int bytesRead = fis.read(buffer);
+                            os.write(buffer, 0, bytesRead);
+                        }
+                        os.flush();
+                    }
+                }
+
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
