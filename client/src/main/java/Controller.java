@@ -30,7 +30,7 @@ public class Controller implements Initializable {
     public void sendCommand(ActionEvent actionEvent) {
         String msg = text.getCharacters().toString();
 
-        // download message
+        // download file message
         if(msg.startsWith("./download")) {
             try {
                 String fileName = msg.split(" ")[1];
@@ -54,6 +54,7 @@ public class Controller implements Initializable {
                         }
                     }
                 }
+                refreshFileList();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -79,15 +80,7 @@ public class Controller implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         init();
         try{
-            clientFileList = new ArrayList<>();
-            File dir = new File(clientPath);
-            if (!dir.exists()) {
-                throw new RuntimeException("directory resource not exists on client");
-            }
-            for (File file : Objects.requireNonNull(dir.listFiles())) {
-                clientFileList.add(file);
-                listView.getItems().add(file.getName() + " : " + file.length());
-            }
+            refreshFileList();
             listView.setOnMouseClicked(a -> {
                 if (a.getClickCount() == 2) {
                     String fileName = getFilenameFromRecord(listView.getSelectionModel().getSelectedItem());
@@ -113,12 +106,28 @@ public class Controller implements Initializable {
                     }
                 }
             });
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private void refreshFileList() {
+        try {
+            clientFileList = new ArrayList<>();
+            listView.getItems().clear();
+            File dir = new File(clientPath);
+            if (!dir.exists()) {
+                throw new RuntimeException("directory resource not exists on client");
+            }
+            for (File file : Objects.requireNonNull(dir.listFiles())) {
+                clientFileList.add(file);
+                listView.getItems().add(file.getName() + " : " + file.length() + " b");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     private String getFilenameFromRecord(String record) {
         return record.split(":")[0].trim();
